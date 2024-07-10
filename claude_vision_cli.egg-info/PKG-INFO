@@ -1,3 +1,26 @@
+Metadata-Version: 2.1
+Name: claude-vision-cli
+Version: 0.2.0
+Summary: An advanced CLI tool for image analysis using Claude 3.5 Sonnet
+Home-page: https://github.com/irthomasthomas/claude-vision-cli
+Author: Your Name
+Author-email: irthomasthomas@gmail.com
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+Requires-Dist: click
+Requires-Dist: pillow
+Requires-Dist: requests
+Requires-Dist: pyyaml
+
 # Claude Vision CLI
 
 Claude Vision CLI is an advanced command-line tool for image analysis using the Claude 3.5 Sonnet vision model. This tool allows you to process one or more images, including images from URLs, and receive detailed descriptions or structured output based on the content of the images.
@@ -11,8 +34,8 @@ To install Claude Vision CLI, follow these steps:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/irthomasthomas/claude-vision.git
-   cd claude-vision
+   git clone https://github.com/irthomasthomas/claude-vision-cli.git
+   cd claude-vision-cli
    ```
 
 2. Install the package:

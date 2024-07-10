@@ -4,14 +4,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="claude-vision-cli",
+    name="claude-vision",
     version="0.2.0",
     author="Your Name",
     author_email="irthomasthomas@gmail.com",
     description="An advanced CLI tool for image analysis using Claude 3.5 Sonnet",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/irthomasthomas/claude-vision-cli",
+    url="https://github.com/irthomasthomas/claude-vision",
     packages=find_packages(),
     install_requires=[
         "click",
@@ -21,7 +21,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "claude-vision=claude_vision_cli.cli:cli",
+            "claude-vision=claude_vision.cli:cli",
         ],
     },
     classifiers=[

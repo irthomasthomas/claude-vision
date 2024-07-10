@@ -1,0 +1,2 @@
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): api.anthropic.com:443
+DEBUG:urllib3.connectionpool:https://api.anthropic.com:443 "POST /v1/messages HTTP/1.1" 200 None
