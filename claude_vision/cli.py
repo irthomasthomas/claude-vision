@@ -1,3 +1,4 @@
+import json
 import click
 import sys
 from PIL import Image
@@ -108,8 +109,16 @@ def analyze(image_paths, url, prompt, output, stream, max_tokens, system_prompt)
     try:
         result = claude_vision_analysis(base64_images, prompt, output, stream, system_prompt, max_tokens)
         if stream:
-            for chunk in result:
-                click.echo(chunk.decode('utf-8'))
+            for line in result:
+                try:
+                    event = json.loads(line.decode('utf-8').strip('data: '))
+                    if event['type'] == 'content_block_delta':
+                        text = event['delta'].get('text', '')
+                        click.echo(text, nl=False)
+                    elif event['type'] == 'message_stop':
+                        click.echo()  # Add a newline at the end
+                except json.JSONDecodeError:
+                    pass  # Ignore non-JSON lines (like 'ping' events)
         else:
             click.echo(result)
     except Exception as e:

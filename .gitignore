@@ -1,0 +1,6 @@
+.artefacts
+.asi_kernel.log
+agi-logs.db
+claude_vision_debug.log
+claude_vision.egg-info
+claude_vision_cli.egg-info
