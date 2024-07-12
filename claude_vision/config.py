@@ -14,7 +14,7 @@ DEFAULT_PERSONAS = {
 
 DEFAULT_STYLES = {
     "noir_detective": "Describe the scene as if you're a hard-boiled detective in a film noir.",
-    "victorian_poet": "Analyze the image in the flowery, romantic style of a Victorian-era poet.",
+    "victorian_gent": "Me dear fellow, Analyze the image in the flowery, romantic style of a Victorian-era gentleman of substance and quality.",
     "sci_fi_author": "Describe the image as if it's a scene from a futuristic science fiction novel.",
 }
 

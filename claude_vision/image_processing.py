@@ -58,7 +58,7 @@ def process_image(image_source):
             image = image_source
         else:
             raise ValueError(f"Unsupported image source type: {type(image_source)}")
-
+        
         # Ensure image is in a supported format
         if image.format not in SUPPORTED_FORMATS:
             image = image.convert('RGB')
