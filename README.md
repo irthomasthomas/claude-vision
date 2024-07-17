@@ -37,12 +37,12 @@ Claude Vision CLI offers several advanced features:
 
 ### Basic Analysis
 ```
-claude-vision [IMAGE_PATHS]... [OPTIONS]
+claude-vision analyze [IMAGE_PATHS]... [OPTIONS]
 ```
 
 Example:
 ```
-claude-vision image1.jpg image2.png -p "Describe the contents of these images"
+claude-vision analyze image1.jpg image2.png -p "Describe the contents of these images"
 ```
 
 ### Using stdin and stdout
