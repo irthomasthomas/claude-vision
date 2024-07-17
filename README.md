@@ -17,8 +17,8 @@ To install Claude Vision CLI, follow these steps:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/irthomasthomas/claude-vision-cli.git
-   cd claude-vision-cli
+   git clone https://github.com/irthomasthomas/claude-vision.git
+   cd claude-vision
    ```
 
 2. Install the package:
