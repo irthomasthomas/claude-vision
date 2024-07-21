@@ -1,0 +1,143 @@
+import os
+os.environ['CLAUDE_VISION_TEST'] = 'True'
+
+import unittest
+import asyncio
+from unittest.mock import patch, AsyncMock
+from PIL import Image
+import io
+import base64
+import httpx
+from claude_vision.image_processing import (
+    convert_image_to_base64, 
+    check_and_resize_image,
+    estimate_image_tokens,
+    fetch_image_from_url, 
+    process_image_source,
+    process_multiple_images
+)
+from claude_vision.exceptions import InvalidRequestError
+from claude_vision.config import MAX_IMAGE_SIZE
+
+class TestImageProcessing(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.test_image = Image.new('RGB', (100, 100), color='red')
+
+    def test_convert_image_to_base64(self):
+        """Test if an image is correctly converted to a base64 string."""
+        base64_string = convert_image_to_base64(self.test_image)
+        self.assertTrue(isinstance(base64_string, str))
+        self.assertTrue(base64_string.startswith('iVBORw0KGgo'))
+
+    def test_check_and_resize_image(self):
+        """Test if an image is correctly resized when it exceeds the maximum dimensions."""
+        large_image = Image.new('RGB', (2000, 2000), color='blue')
+        resized_image = check_and_resize_image(large_image)
+        self.assertTrue(resized_image.width <= MAX_IMAGE_SIZE[0] and resized_image.height <= MAX_IMAGE_SIZE[1])
+        
+        # Test that small images are not resized
+        small_image = Image.new('RGB', (500, 500), color='green')
+        unchanged_image = check_and_resize_image(small_image)
+        self.assertEqual(unchanged_image.size, (500, 500))
+
+    def test_estimate_image_tokens(self):
+        """Test if token estimation for an image is correct."""
+        estimated_tokens = estimate_image_tokens(self.test_image)
+        self.assertEqual(estimated_tokens, (100 * 100) // 750)
+
+    @patch('httpx.AsyncClient.get')
+    async def test_fetch_image_from_url(self, mock_get):
+        """Test if an image is correctly fetched from a URL."""
+        img_byte_arr = io.BytesIO()
+        self.test_image.save(img_byte_arr, format='PNG')
+        img_byte_arr = img_byte_arr.getvalue()
+
+        mock_response = AsyncMock()
+        mock_response.content = img_byte_arr
+        mock_response.aread = AsyncMock()
+        mock_get.return_value = mock_response
+
+        async with httpx.AsyncClient() as client:
+            fetched_image = await fetch_image_from_url('https://example.com/image.jpg', client)
+        self.assertIsInstance(fetched_image, Image.Image)
+        self.assertEqual(fetched_image.size, (100, 100))
+
+    @patch('httpx.AsyncClient.get')
+    async def test_fetch_image_from_wikipedia(self, mock_get):
+        """Test if a real Wikipedia image can be fetched and processed."""
+        mona_lisa_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/687px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg"
+        
+        with open('tests/mona_lisa_sample.jpg', 'rb') as f:
+            mock_response = AsyncMock()
+            mock_response.content = f.read()
+            mock_response.aread = AsyncMock()
+        mock_get.return_value = mock_response
+
+        async with httpx.AsyncClient() as client:
+            fetched_image = await fetch_image_from_url(mona_lisa_url, client)
+        self.assertIsInstance(fetched_image, Image.Image)
+        self.assertTrue(fetched_image.width > 0 and fetched_image.height > 0)
+
+    async def test_process_image_source_file(self):
+        """Test processing an image from a file path."""
+        with patch('claude_vision.image_processing.open_image') as mock_open:
+            mock_open.return_value = self.test_image
+            async with httpx.AsyncClient() as client:
+                result = await process_image_source('test_image.jpg', client)
+            self.assertTrue(isinstance(result, str))
+            self.assertTrue(result.startswith('iVBORw0KGgo'))
+
+    async def test_process_image_source_url(self):
+        """Test processing an image from a URL."""
+        with patch('claude_vision.image_processing.fetch_image_from_url') as mock_fetch:
+            mock_fetch.return_value = self.test_image
+            async with httpx.AsyncClient() as client:
+                result = await process_image_source('http://example.com/image.jpg', client)
+            self.assertTrue(isinstance(result, str))
+            self.assertTrue(result.startswith('iVBORw0KGgo'))
+
+    async def test_process_image_source_bytesio(self):
+        """Test processing an image from a BytesIO object."""
+        img_byte_arr = io.BytesIO()
+        self.test_image.save(img_byte_arr, format='PNG')
+        img_byte_arr.seek(0)
+        
+        async with httpx.AsyncClient() as client:
+            result = await process_image_source(img_byte_arr, client)
+        self.assertTrue(isinstance(result, str))
+        self.assertTrue(result.startswith('iVBORw0KGgo'))
+
+    async def test_process_image_source_invalid(self):
+        """Test processing an invalid image source."""
+        with self.assertRaises(InvalidRequestError):
+            async with httpx.AsyncClient() as client:
+                await process_image_source(123, client)  # Invalid type
+
+    async def test_process_multiple_images(self):
+        """Test processing multiple images concurrently."""
+        image_sources = ['test1.jpg', 'http://example.com/test2.jpg', io.BytesIO()]
+        
+        with patch('claude_vision.image_processing.process_image_source') as mock_process:
+            mock_process.return_value = 'base64_string'
+            results = await process_multiple_images(image_sources)
+        
+        self.assertEqual(len(results), 3)
+        self.assertTrue(all(isinstance(result, str) for result in results))
+
+    async def test_process_multiple_images_limit(self):
+        """Test that process_multiple_images enforces the 20-image limit."""
+        image_sources = ['test.jpg'] * 21  # 21 images, which is over the limit
+        
+        with self.assertRaises(InvalidRequestError):
+            await process_multiple_images(image_sources)
+
+        # Test with exactly 20 images (should not raise an error)
+        image_sources = ['test.jpg'] * 20
+        with patch('claude_vision.image_processing.process_image_source') as mock_process:
+            mock_process.return_value = 'base64_string'
+            results = await process_multiple_images(image_sources)
+        
+        self.assertEqual(len(results), 20)
+
+if __name__ == '__main__':
+    unittest.main()

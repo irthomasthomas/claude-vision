@@ -1,12 +1,26 @@
-import os
-import requests
+
+import httpx
 import json
+from typing import List, Dict, Any, AsyncGenerator, Union
 from .config import ANTHROPIC_API_KEY
 from .utils import logger
+from .exceptions import (
+    InvalidRequestError, AuthenticationError, PermissionError,
+    NotFoundError, RateLimitError, APIError, OverloadedError
+)
 
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 
-def claude_vision_analysis(base64_images, prompt, output_type, stream=False, system_prompt=None, max_tokens=1000):
+async def claude_vision_analysis(
+    base64_images: List[str],
+    prompt: str,
+    output_type: str,
+    stream: bool = False,
+    system_prompt: str = None,
+    max_tokens: int = 1000,
+    prefill: str = None,
+    tools: List[Dict[str, Any]] = None
+) -> Union[str, AsyncGenerator[str, None]]:
     headers = {
         "Content-Type": "application/json",
         "x-api-key": ANTHROPIC_API_KEY,
@@ -30,23 +44,62 @@ def claude_vision_analysis(base64_images, prompt, output_type, stream=False, sys
             }
         })
 
+    messages = [{"role": "user", "content": content}]
+    if output_type == 'json' and not prefill:
+        prefill = '{'
+    if prefill:
+        messages.append({"role": "assistant", "content": prefill})
+
     data = {
         "model": "claude-3-5-sonnet-20240620",
         "max_tokens": max_tokens,
-        "system": system_prompt or system_prompts[output_type],
-        "messages": [{"role": "user", "content": content}],
+        "system": system_prompt or system_prompts.get(output_type, system_prompts['text']),
+        "messages": messages,
         "stream": stream
     }
 
-    try:
-        response = requests.post(ANTHROPIC_API_URL, headers=headers, json=data, stream=stream)
-        response.raise_for_status()
+    if tools:
+        data["tools"] = tools
 
-        if stream:
-            return response.iter_lines()
-        else:
-            result = response.json()
-            return result['content'][0]['text']
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error in Claude vision analysis: {str(e)}")
-        raise
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(ANTHROPIC_API_URL, headers=headers, json=data, timeout=180.0)
+            response.raise_for_status()
+
+            if stream:
+                return handle_stream_response(response)
+            else:
+                result = response.json()
+                content = result['content'][0]['text']
+                if output_type == 'json':
+                    content = '{' + content.lstrip('{')  # Ensure it starts with '{'
+                return content
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error occurred: {e}")
+            handle_http_error(e)
+        except Exception as e:
+            logger.error(f"An unexpected error occurred: {e}")
+            raise APIError(f"An unexpected error occurred: {str(e)}")
+
+async def handle_stream_response(response: httpx.Response) -> AsyncGenerator[str, None]:
+    async for line in response.aiter_lines():
+        if line.startswith('data: '):
+            event = json.loads(line[6:])
+            if event['type'] == 'content_block_delta':
+                yield event['delta'].get('text', '')
+            elif event['type'] == 'message_stop':
+                break
+
+def handle_http_error(e: httpx.HTTPStatusError):
+    error_map = {
+        400: InvalidRequestError,
+        401: AuthenticationError,
+        403: PermissionError,
+        404: NotFoundError,
+        429: RateLimitError,
+        500: APIError,
+        529: OverloadedError
+    }
+    error_class = error_map.get(e.response.status_code, APIError)
+    error_message = e.response.json().get('error', {}).get('message', str(e))
+    raise error_class(error_message)

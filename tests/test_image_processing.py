@@ -1,52 +1,62 @@
-import unittest
-from unittest.mock import patch, MagicMock
-from PIL import Image
+
+import pytest
+import os
 import io
-import base64
-from claude_vision_cli.image_processing import convert_image_to_base64, resize_image, fetch_image_from_url
+from PIL import Image
+from claude_vision.image_processing import (
+    convert_image_to_base64,
+    check_and_resize_image,
+    estimate_image_tokens,
+    process_image_source,
+    process_multiple_images
+)
+from claude_vision.exceptions import InvalidRequestError
 
-class TestImageProcessing(unittest.TestCase):
-    def setUp(self):
-        self.test_image = Image.new('RGB', (100, 100), color='red')
+TEST_IMAGE_DIR = '/home/ShellLM/Projects/claude-vision/tests'
 
-    def test_convert_image_to_base64(self):
-        base64_string = convert_image_to_base64(self.test_image)
-        self.assertTrue(isinstance(base64_string, str))
-        self.assertTrue(base64_string.startswith('iVBORw0KGgo'))
+@pytest.fixture
+def sample_image():
+    return Image.open(os.path.join(TEST_IMAGE_DIR, 'sample.jpg'))
 
-    def test_resize_image(self):
-        resized_image = resize_image(self.test_image, max_size=(50, 50))
-        self.assertEqual(resized_image.size, (50, 50))
+def test_convert_image_to_base64(sample_image):
+    base64_string = convert_image_to_base64(sample_image)
+    assert isinstance(base64_string, str)
+    assert base64_string.startswith('iVBORw0KGgo')
 
-    @patch('requests.get')
-    def test_fetch_image_from_url(self, mock_get):
-        # Create a valid image for the mock response
-        img_byte_arr = io.BytesIO()
-        self.test_image.save(img_byte_arr, format='PNG')
-        img_byte_arr = img_byte_arr.getvalue()
+def test_check_and_resize_image(sample_image):
+    resized_image = check_and_resize_image(sample_image, (100, 100))
+    assert resized_image.width <= 100
+    assert resized_image.height <= 100
 
-        mock_response = MagicMock()
-        mock_response.content = img_byte_arr
-        mock_get.return_value = mock_response
+def test_estimate_image_tokens(sample_image):
+    tokens = estimate_image_tokens(sample_image)
+    assert isinstance(tokens, int)
+    assert tokens > 0
 
-        fetched_image = fetch_image_from_url('https://example.com/image.jpg')
-        self.assertIsInstance(fetched_image, Image.Image)
-        self.assertEqual(fetched_image.size, (100, 100))
+@pytest.mark.asyncio
+async def test_process_image_source():
+    image_path = os.path.join(TEST_IMAGE_DIR, 'sample.jpg')
+    base64_image = await process_image_source(image_path, None)
+    assert isinstance(base64_image, str)
+    assert base64_image.startswith('iVBORw0KGgo')
 
-    @patch('requests.get')
-    def test_fetch_image_from_wikipedia(self, mock_get):
-        # Famous Wikipedia image: Mona Lisa
-        mona_lisa_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/687px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg"
-        
-        # Use the actual Mona Lisa sample image for the test
-        with open('tests/mona_lisa_sample.jpg', 'rb') as f:
-            mock_response = MagicMock()
-            mock_response.content = f.read()
-        mock_get.return_value = mock_response
+@pytest.mark.asyncio
+async def test_process_multiple_images():
+    image_paths = [
+        os.path.join(TEST_IMAGE_DIR, 'sample.jpg'),
+        os.path.join(TEST_IMAGE_DIR, 'sample2.png')
+    ]
+    base64_images = await process_multiple_images(image_paths)
+    assert len(base64_images) == 2
+    assert all(isinstance(img, str) for img in base64_images)
 
-        fetched_image = fetch_image_from_url(mona_lisa_url)
-        self.assertIsInstance(fetched_image, Image.Image)
-        self.assertTrue(fetched_image.width > 0 and fetched_image.height > 0)
+@pytest.mark.asyncio
+async def test_process_invalid_image():
+    with pytest.raises(InvalidRequestError):
+        await process_image_source('nonexistent.jpg', None)
 
-if __name__ == '__main__':
-    unittest.main()
+@pytest.mark.asyncio
+async def test_process_too_many_images():
+    image_paths = [os.path.join(TEST_IMAGE_DIR, 'sample.jpg')] * 21
+    with pytest.raises(InvalidRequestError):
+        await process_multiple_images(image_paths)
