@@ -90,6 +90,7 @@ claude-vision alt-text IMAGE_PATH --output md
 - Conduct comparative time-series analysis
 - Generate detailed alt-text for web accessibility
 - Choose between text, JSON, or Markdown output formats
+- JSON output with automatic structure enforcement
 - Automatic image resizing to meet API requirements
 - Support for stdin and stdout, enabling integration with other tools
 

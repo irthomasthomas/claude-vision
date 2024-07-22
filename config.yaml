@@ -1,0 +1,3 @@
+DEFAULT_PROMPT: "Describe this image in detail."
+MAX_IMAGE_SIZE: [1568, 1568]
+SUPPORTED_FORMATS: ['JPEG', 'PNG', 'GIF', 'WEBP']
