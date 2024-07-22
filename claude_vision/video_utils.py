@@ -27,13 +27,14 @@ def get_video_metadata(file_path):
 
 def process_frame(args):
     frame, frame_number, interval = args
-    # Add any frame preprocessing here
+    # Convert BGR to RGB
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     return {
-        'frame': frame,
+        'frame': frame_rgb,
         'frame_number': frame_number,
         'timestamp': frame_number * interval
     }
-
+    
 def extract_frames(video_path, interval, num_workers=None):
     if num_workers is None:
         num_workers = multiprocessing.cpu_count()

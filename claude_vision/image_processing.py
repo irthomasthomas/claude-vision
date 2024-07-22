@@ -8,6 +8,8 @@ from typing import List, Union
 from .config import MAX_IMAGE_SIZE, SUPPORTED_FORMATS
 from .utils import logger
 from .exceptions import InvalidRequestError
+import numpy as np
+import cv2
 
 async def fetch_image_from_url(url: str, client: httpx.AsyncClient) -> Image.Image:
     try:
@@ -39,7 +41,7 @@ def open_image(image_path: str) -> Image.Image:
         logger.error(f"Error opening image {image_path}: {str(e)}")
         raise InvalidRequestError(f"Failed to open image: {image_path}")
 
-async def process_image_source(source: Union[str, Image.Image, io.BytesIO], client: httpx.AsyncClient) -> str:
+async def process_image_source(source: Union[str, Image.Image, io.BytesIO, np.ndarray], client: httpx.AsyncClient) -> str:
     try:
         if isinstance(source, str):
             if source.startswith(('http://', 'https://')):
@@ -50,6 +52,8 @@ async def process_image_source(source: Union[str, Image.Image, io.BytesIO], clie
             image = source
         elif isinstance(source, io.BytesIO):
             image = Image.open(source)
+        elif isinstance(source, np.ndarray):
+            image = Image.fromarray(cv2.cvtColor(source, cv2.COLOR_BGR2RGB))
         else:
             raise InvalidRequestError(f"Unsupported image source type: {type(source)}")
         

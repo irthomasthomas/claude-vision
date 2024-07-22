@@ -24,9 +24,10 @@ async def process_video_frames(frames, persona, output, stream):
     
     return results
 
-async def analyze_video(video_path, frame_interval, persona, output, stream):
+
+async def analyze_video(video_path, frame_interval, persona, output, stream, num_workers=None):
     metadata = get_video_metadata(video_path)
-    frames = extract_frames(video_path, frame_interval)
+    frames = extract_frames(video_path, frame_interval, num_workers)
     frame_results = await process_video_frames(frames, persona, output, stream)
     return metadata, frame_results
 

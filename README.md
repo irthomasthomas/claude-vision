@@ -11,6 +11,9 @@ claude-vision judge [IMAGE_PATHS]... --criteria "sharpness,color,composition" --
 
 Claude Vision CLI is an advanced command-line tool for image analysis using the Claude 3.5 Sonnet vision model. This tool allows you to process one or more images, including images from URLs, and receive detailed descriptions or structured output based on the content of the images. It can be used as part of pipeline to support advanced analysis and automation. It features a markdown mode and JSON mode to guarantee structured output.
 
+## Examples:
+More examples available in [Lighthouse Analysis Demo](demo/lighthouse.md)
+
 ## Installation
 
 To install Claude Vision CLI, follow these steps:

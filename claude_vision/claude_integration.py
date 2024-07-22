@@ -1,6 +1,7 @@
 
 import httpx
 import json
+import traceback
 from typing import List, Dict, Any, AsyncGenerator, Union
 from .config import ANTHROPIC_API_KEY
 from .utils import logger
@@ -63,7 +64,9 @@ async def claude_vision_analysis(
 
     async with httpx.AsyncClient() as client:
         try:
+            logger.debug(f"Sending request to Anthropic API: {ANTHROPIC_API_URL}")
             response = await client.post(ANTHROPIC_API_URL, headers=headers, json=data, timeout=180.0)
+            logger.debug(f"Received response from Anthropic API. Status code: {response.status_code}")
             response.raise_for_status()
 
             if stream:
@@ -76,9 +79,18 @@ async def claude_vision_analysis(
                 return content
         except httpx.HTTPStatusError as e:
             logger.error(f"HTTP error occurred: {e}")
+            logger.error(f"Response content: {e.response.text}")
             handle_http_error(e)
+        except httpx.RequestError as e:
+            logger.error(f"Request error occurred: {e}")
+            raise APIError(f"Request error: {str(e)}")
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {e}")
+            logger.error(f"Response content: {response.text}")
+            raise APIError(f"Invalid JSON response from API: {str(e)}")
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
             raise APIError(f"An unexpected error occurred: {str(e)}")
 
 async def handle_stream_response(response: httpx.Response) -> AsyncGenerator[str, None]:

@@ -1,3 +1,5 @@
+import json
+from typing import AsyncGenerator
 import click
 import asyncio
 from .video_utils import is_video_file
@@ -74,14 +76,6 @@ async def claude_vision_async(input_file, persona, json_input, output, stream, v
         click.echo(f"An unexpected error occurred: {str(e)}", err=True)
         
 
-@cli.command()
-@click.argument('input_file', type=click.Path(exists=True), required=False)
-@click.option('--persona', help="Optional persona for analysis")
-@click.option('--json-input', type=click.File('r'), help="JSON input for chained operations")
-@click.option('--output', type=click.Choice(['json', 'md', 'markdown', 'text']), default='text', help="Output format")
-@click.option('--stream', is_flag=True, help="Stream the response in real-time")
-def analyze(input_file, persona, json_input, output, stream):
-    asyncio.run(claude_vision_async(input_file, persona, json_input, output, stream))
 
 @cli.command()
 @click.argument('image_paths', nargs=-1, type=click.Path(exists=True), required=True)
