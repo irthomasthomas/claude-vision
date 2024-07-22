@@ -133,7 +133,7 @@ You can pipe images into Claude Vision CLI:
 ## Video Frame Analysis: Coastal Town
 
 ```
-claude-vision analyze /home/ShellLM/Videos/videoslideshow.mp4 --video --frame-interval 60 -num-workers 8
+claude-vision analyze videoslideshow.mp4 --video --frame-interval 60 -num-workers 8
 ```
 
 <img src="tests/images/Screenshot_20240722_230603.png" width="400" alt="llandudno-wales-beach-rainbow.">
@@ -233,7 +233,7 @@ claude-vision evolution tests/images/aurora-zenith-sky-IMG20240510235144.jpg tes
    claude-vision evolution tests/images/aurora-zenith-sky-IMG20240510235144.jpg tests/images/aurora-zenith-sky-IMG20240510235307.jpg --time-points "2024-05-10 23:51:44,2024-05-10 23:53:07" --output json
    ```
 
-   <img src="/home/ShellLM/Projects/claude-vision/tests/images/aurora-moon.jpg" width="300" alt="aurora-crescent-moon">
+   <img src="tests/images/aurora-moon.jpg" width="300" alt="aurora-crescent-moon">
 
    <img src="tests/images/aurora-zenith-sky-IMG20240510235144.jpg" width="300" alt="aurora-zenith-1">
 
