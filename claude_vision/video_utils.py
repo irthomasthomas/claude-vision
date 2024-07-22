@@ -70,6 +70,3 @@ def save_frames(frames, output_dir):
 # Check if CUDA is available and set OpenCV to use GPU
 if cv2.cuda.getCudaEnabledDeviceCount() > 0:
     cv2.cuda.setDevice(0)
-    print("Using GPU acceleration for OpenCV operations")
-else:
-    print("GPU acceleration not available, using CPU")

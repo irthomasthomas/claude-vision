@@ -1,8 +1,8 @@
+
+
 import json
 import jsonschema
 from jsonschema import validate
-
-# Existing schemas and functions
 
 INPUT_SCHEMA = {
     "type": "object",
@@ -17,7 +17,12 @@ INPUT_SCHEMA = {
 OUTPUT_SCHEMA = {
     "type": "object",
     "properties": {
-        "result": {"type": "string"},
+        "result": {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "object"}
+            ]
+        },
         "confidence": {"type": "number"},
         "analysis_type": {"type": "string"}
     },
@@ -35,14 +40,26 @@ def parse_json_input(json_input):
         raise ValueError(f"JSON input does not match schema: {e}")
 
 def format_json_output(result, analysis_type):
+    if isinstance(result, str):
+        try:
+            result = json.loads(result)
+        except json.JSONDecodeError:
+            # If it's not valid JSON, keep it as is
+            pass
+    
     output = {
-        "result": result,
+        "result": result if isinstance(result, dict) else {"description": result},
         "analysis_type": analysis_type
     }
-    validate(instance=output, schema=OUTPUT_SCHEMA)
+    
+    try:
+        validate(instance=output, schema=OUTPUT_SCHEMA)
+    except jsonschema.exceptions.ValidationError as e:
+        raise ValueError(f"Output does not match schema: {e}")
+    
     return output
 
-# New video-specific schemas and functions
+# Video-specific schemas and functions
 
 VIDEO_INPUT_SCHEMA = {
     "type": "object",
@@ -75,7 +92,12 @@ VIDEO_OUTPUT_SCHEMA = {
                 "properties": {
                     "frame_number": {"type": "integer"},
                     "timestamp": {"type": "number"},
-                    "result": {"type": "string"}
+                    "result": {
+                        "oneOf": [
+                            {"type": "string"},
+                            {"type": "object"}
+                        ]
+                    }
                 }
             }
         },
@@ -100,5 +122,8 @@ def format_video_json_output(video_metadata, frame_results, analysis_type):
         "frame_results": frame_results,
         "analysis_type": analysis_type
     }
-    validate(instance=output, schema=VIDEO_OUTPUT_SCHEMA)
+    try:
+        validate(instance=output, schema=VIDEO_OUTPUT_SCHEMA)
+    except jsonschema.exceptions.ValidationError as e:
+        raise ValueError(f"Output does not match schema: {e}")
     return output

@@ -1,3 +1,6 @@
+import sys
+import io
+from PIL import Image
 import json
 from typing import AsyncGenerator
 import click
@@ -5,14 +8,13 @@ import asyncio
 from .video_utils import is_video_file
 from .video_processing import analyze_video
 from .json_utils import parse_json_input, format_json_output, parse_video_json_input, format_video_json_output
-from .image_processing import process_multiple_images
+from .image_processing import process_multiple_images, convert_image_to_base64
 from .claude_integration import claude_vision_analysis
 from .advanced_features import visual_judge, image_evolution_analyzer, comparative_time_series_analysis
 
 @click.group()
 def cli():
     pass
-
 @cli.command()
 @click.argument('input_file', type=click.Path(exists=True), required=False)
 @click.option('--persona', help="Optional persona for analysis")
@@ -23,6 +25,11 @@ def cli():
 @click.option('--frame-interval', type=int, default=30, help="Interval between frames to analyze in video")
 @click.option('--num-workers', type=int, default=None, help="Number of worker processes for video analysis")
 def analyze(input_file, persona, json_input, output, stream, video, frame_interval, num_workers):
+    if not input_file and not sys.stdin.isatty():
+        # Read from stdin if no input file is provided and stdin is not a terminal
+        input_data = sys.stdin.buffer.read()
+        input_file = io.BytesIO(input_data)
+    
     asyncio.run(claude_vision_async(input_file, persona, json_input, output, stream, video, frame_interval, num_workers))
 
 async def claude_vision_async(input_file, persona, json_input, output, stream, video, frame_interval, num_workers):
@@ -34,9 +41,9 @@ async def claude_vision_async(input_file, persona, json_input, output, stream, v
             analysis_type = data['analysis_type']
             frame_interval = data.get('frame_interval', frame_interval)
         elif not input_file:
-            raise click.UsageError("Please provide an input file or JSON input.")
+            raise click.UsageError("Please provide an input file, pipe input, or JSON input.")
 
-        if video or (input_file and is_video_file(input_file)):
+        if video or (isinstance(input_file, str) and is_video_file(input_file)):
             metadata, frame_results = await analyze_video(input_file, frame_interval, persona, output, stream, num_workers)
             if output == 'json':
                 click.echo(json.dumps(format_video_json_output(metadata, frame_results, analysis_type if json_input else "video_description"), indent=2))
@@ -44,7 +51,11 @@ async def claude_vision_async(input_file, persona, json_input, output, stream, v
                 for result in frame_results:
                     click.echo(f"Frame {result['frame_number']} ({result['timestamp']:.2f}s): {result['result']}")
         else:
-            base64_images = await process_multiple_images([input_file])
+            if isinstance(input_file, io.BytesIO):
+                image = Image.open(input_file)
+                base64_images = [convert_image_to_base64(image)]
+            else:
+                base64_images = await process_multiple_images([input_file])
             prompt = generate_prompt(persona)
             result = await claude_vision_analysis(base64_images, prompt, output, stream)
             
@@ -54,7 +65,8 @@ async def claude_vision_async(input_file, persona, json_input, output, stream, v
                         click.echo(chunk, nl=False)
                     click.echo()
                 else:
-                    click.echo(json.dumps(format_json_output(result, "description"), indent=2))
+                    formatted_result = format_json_output(result, "description")
+                    click.echo(json.dumps(formatted_result, indent=2))
             elif output in ['md', 'markdown']:
                 if stream:
                     async for chunk in result:
