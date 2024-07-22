@@ -1,15 +1,78 @@
-from typing import AsyncGenerator
 import click
-import json
 import asyncio
-from .claude_integration import claude_vision_analysis
-from .json_utils import parse_json_input, format_json_output
+from .video_utils import is_video_file
+from .video_processing import analyze_video
+from .json_utils import parse_json_input, format_json_output, parse_video_json_input, format_video_json_output
 from .image_processing import process_multiple_images
+from .claude_integration import claude_vision_analysis
 from .advanced_features import visual_judge, image_evolution_analyzer, comparative_time_series_analysis
 
 @click.group()
 def cli():
     pass
+
+@cli.command()
+@click.argument('input_file', type=click.Path(exists=True), required=False)
+@click.option('--persona', help="Optional persona for analysis")
+@click.option('--json-input', type=click.File('r'), help="JSON input for chained operations")
+@click.option('--output', type=click.Choice(['json', 'md', 'markdown', 'text']), default='text', help="Output format")
+@click.option('--stream', is_flag=True, help="Stream the response in real-time")
+@click.option('--video', is_flag=True, help="Treat input as a video file")
+@click.option('--frame-interval', type=int, default=30, help="Interval between frames to analyze in video")
+@click.option('--num-workers', type=int, default=None, help="Number of worker processes for video analysis")
+def analyze(input_file, persona, json_input, output, stream, video, frame_interval, num_workers):
+    asyncio.run(claude_vision_async(input_file, persona, json_input, output, stream, video, frame_interval, num_workers))
+
+async def claude_vision_async(input_file, persona, json_input, output, stream, video, frame_interval, num_workers):
+    try:
+        if json_input:
+            data = parse_video_json_input(json_input) if video else parse_json_input(json_input)
+            input_file = data['file_path']
+            persona = data.get('persona', persona)
+            analysis_type = data['analysis_type']
+            frame_interval = data.get('frame_interval', frame_interval)
+        elif not input_file:
+            raise click.UsageError("Please provide an input file or JSON input.")
+
+        if video or (input_file and is_video_file(input_file)):
+            metadata, frame_results = await analyze_video(input_file, frame_interval, persona, output, stream, num_workers)
+            if output == 'json':
+                click.echo(json.dumps(format_video_json_output(metadata, frame_results, analysis_type if json_input else "video_description"), indent=2))
+            else:
+                for result in frame_results:
+                    click.echo(f"Frame {result['frame_number']} ({result['timestamp']:.2f}s): {result['result']}")
+        else:
+            base64_images = await process_multiple_images([input_file])
+            prompt = generate_prompt(persona)
+            result = await claude_vision_analysis(base64_images, prompt, output, stream)
+            
+            if output == 'json':
+                if stream:
+                    async for chunk in result:
+                        click.echo(chunk, nl=False)
+                    click.echo()
+                else:
+                    click.echo(json.dumps(format_json_output(result, "description"), indent=2))
+            elif output in ['md', 'markdown']:
+                if stream:
+                    async for chunk in result:
+                        click.echo(chunk, nl=False)
+                    click.echo()
+                else:
+                    click.echo(result)
+            else:
+                if stream:
+                    async for chunk in result:
+                        click.echo(chunk, nl=False)
+                    click.echo()
+                else:
+                    click.echo(result)
+
+    except ValueError as e:
+        click.echo(f"Error: {str(e)}", err=True)
+    except Exception as e:
+        click.echo(f"An unexpected error occurred: {str(e)}", err=True)
+        
 
 @cli.command()
 @click.argument('input_file', type=click.Path(exists=True), required=False)
@@ -69,48 +132,6 @@ def time_series(image_paths, time_points, metrics, output):
     
     asyncio.run(time_series_async(image_paths, time_points_list, metrics_list, output))
 
-
-async def claude_vision_async(input_file, persona, json_input, output, stream):
-    try:
-        if json_input:
-            data = parse_json_input(json_input)
-            input_file = data['file_path']
-            persona = data.get('persona', persona)
-            analysis_type = data['analysis_type']
-        elif not input_file:
-            raise click.UsageError("Please provide an input file or JSON input.")
-
-        base64_images = await process_multiple_images([input_file])
-        prompt = generate_prompt(persona)
-        
-        result = await claude_vision_analysis(base64_images, prompt, output, stream)
-
-        if output == 'json':
-            if stream:
-                async for chunk in result:
-                    click.echo(chunk, nl=False)
-                click.echo()
-            else:
-                click.echo(json.dumps(format_json_output(result, "description"), indent=2))
-        elif output in ['md', 'markdown']:
-            if stream:
-                async for chunk in result:
-                    click.echo(chunk, nl=False)
-                click.echo()
-            else:
-                click.echo(result)
-        else:
-            if stream:
-                async for chunk in result:
-                    click.echo(chunk, nl=False)
-                click.echo()
-            else:
-                click.echo(result)
-
-    except ValueError as e:
-        click.echo(f"Error: {str(e)}", err=True)
-    except Exception as e:
-        click.echo(f"An unexpected error occurred: {str(e)}", err=True)
         
 
 async def judge_async(image_paths, criteria, weights, output):
