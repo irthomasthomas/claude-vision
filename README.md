@@ -316,7 +316,11 @@ claude-vision time-series tests/images/aurora-moon.jpg tests/images/aurora-zenit
 ### Generate Alt-Text
 Generate detailed, context-aware alt-text for an image:
 ```
-claude-vision alt-text IMAGE_PATH --output md
+claude-vision alt-text tests/images/church.jpg --output md
+```
+
+```
+alt="Panoramic view of a coastal Welsh village on a misty day. In the foreground, an ancient stone church with a cross-topped spire dominates the hillside. Its graveyard is visible, with scattered headstones. The church overlooks a steep, green slope leading down to a pebble beach and the grey, choppy sea. A railway line runs parallel to the shoreline. Scattered houses dot the hillsides, some with slate roofs typical of the region. The landscape is a mix of lush green fields and rugged terrain, characteristic of the Welsh coast. The overcast sky creates a moody, atmospheric scene, highlighting the area's wild beauty and rich history."
 ```
 
 ## Features

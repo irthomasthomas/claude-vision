@@ -17,10 +17,9 @@ async def claude_vision_analysis(
     prompt: str,
     output_type: str,
     stream: bool = False,
-    system_prompt: str = None,
+    system: str = None,
     max_tokens: int = 1000,
     prefill: str = None,
-    tools: List[Dict[str, Any]] = None
 ) -> Union[str, AsyncGenerator[str, None]]:
     headers = {
         "Content-Type": "application/json",
@@ -28,7 +27,7 @@ async def claude_vision_analysis(
         "anthropic-version": "2023-06-01"
     }
 
-    system_prompts = {
+    systems = {
         'text': "You are Claude 3.5 Sonnet, an AI assistant with vision capabilities. Describe the image.",
         'json': "Analyze the image and provide output in valid JSON format only. No additional text.",
         'md': "Analyze the image and provide output in valid Markdown format only. No additional text."
@@ -49,18 +48,16 @@ async def claude_vision_analysis(
     if output_type == 'json' and not prefill:
         prefill = '{'
     if prefill:
+        prefill = prefill.rstrip()
         messages.append({"role": "assistant", "content": prefill})
 
     data = {
         "model": "claude-3-5-sonnet-20240620",
         "max_tokens": max_tokens,
-        "system": system_prompt or system_prompts.get(output_type, system_prompts['text']),
+        "system": system or systems.get(output_type, systems['text']),
         "messages": messages,
         "stream": stream
     }
-
-    if tools:
-        data["tools"] = tools
 
     async with httpx.AsyncClient() as client:
         try:

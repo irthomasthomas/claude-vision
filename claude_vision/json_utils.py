@@ -1,5 +1,4 @@
 
-
 import json
 import jsonschema
 from jsonschema import validate
@@ -119,11 +118,30 @@ def parse_video_json_input(json_input):
 def format_video_json_output(video_metadata, frame_results, analysis_type):
     output = {
         "video_metadata": video_metadata,
-        "frame_results": frame_results,
+        "frame_results": [],
         "analysis_type": analysis_type
     }
+    
+    for frame in frame_results:
+        formatted_frame = {
+            "frame_number": frame["frame_number"],
+            "timestamp": frame["timestamp"],
+            "result": frame["result"]
+        }
+        
+        # Parse the nested JSON string in the result
+        if isinstance(formatted_frame["result"], str):
+            try:
+                formatted_frame["result"] = json.loads(formatted_frame["result"])
+            except json.JSONDecodeError:
+                # If it's not valid JSON, keep it as is
+                pass
+        
+        output["frame_results"].append(formatted_frame)
+    
     try:
         validate(instance=output, schema=VIDEO_OUTPUT_SCHEMA)
     except jsonschema.exceptions.ValidationError as e:
         raise ValueError(f"Output does not match schema: {e}")
+    
     return output

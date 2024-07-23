@@ -1,0 +1,27 @@
+{
+  "video_metadata": {
+    "fps": 30.0,
+    "frame_count": 277,
+    "duration": 9.233333333333333,
+    "width": 3840,
+    "height": 2160
+  },
+  "frame_results": [
+    {
+      "frame_number": 0,
+      "timestamp": 0.0,
+      "result": "{\n  \"scene\": \"Coastal town landscape\",\n  \"location\": \"Appears to be a British seaside resort, possibly in Wales or England\",\n  \"weather\": \"Overcast with heavy gray clouds dominating the sky\",\n  \"landscape\": {\n    \"foreground\": \"Rocky beach with pebbles and stones\",\n    \"midground\": \"Calm sea or bay with a long pier extending into the water\",\n    \"background\": \"Hills or cliffs with buildings nestled on the slopes and at the base\"\n  },\n  \"buildings\": {\n    \"type\": \"Mixture of residential and likely hotels or guesthouses\",\n    \"colors\": \"Predominantly white and pastel-colored facades\",\n    \"architecture\": \"Victorian or Edwardian style, typical of British seaside towns\"\n  },\n  \"notable_features\": [\n    \"Long pier extending into the water, possibly a pleasure pier\",\n    \"Dense cluster of buildings along the coastline\",\n    \"Dramatic sky with heavy cloud cover\",\n    \"Contrast between the dark hills and lighter colored buildings\"\n  ],\n  \"mood\": \"Moody and atmospheric, with a sense of impending rain or storm\",\n  \"time_of_day\": \"Likely late afternoon or early evening, based on the lighting\",\n  \"season\": \"Cannot be determined definitively, but the vegetation suggests spring or summer\"\n}"
+    },
+    {
+      "frame_number": 120,
+      "timestamp": 480.0,
+      "result": "{\n  \"scene\": \"Coastal town landscape\",\n  \"location\": \"Seaside resort, likely in the UK\",\n  \"elements\": {\n    \"foreground\": \"Rocky beach with pebbles and stones\",\n    \"midground\": \"Calm sea or bay\",\n    \"background\": {\n      \"natural\": \"Green hills and cliffs\",\n      \"man-made\": \"Row of buildings along the shoreline, including hotels and houses\",\n      \"infrastructure\": \"Long pier extending into the water\"\n    },\n    \"sky\": \"Overcast with heavy grey clouds\"\n  },\n  \"atmosphere\": \"Moody and dramatic due to the cloudy sky\",\n  \"colors\": {\n    \"dominant\": [\"Grey\", \"Green\", \"White\"],\n    \"accent\": [\"Blue (buildings)\", \"Brown (beach)\"]\n  },\n  \"notable_features\": [\n    \"Victorian-style architecture of the buildings\",\n    \"Long pier suggesting a popular tourist destination\",\n    \"Contrast between the rugged natural landscape and the developed shoreline\"\n  ],\n  \"time_of_day\": \"Late afternoon or early evening, based on lighting\",\n  \"weather_condition\": \"Overcast, possibly before or after rain\"\n}"
+    },
+    {
+      "frame_number": 240,
+      "timestamp": 960.0,
+      "result": "{\n  \"scene\": \"Coastal town landscape\",\n  \"location\": \"Seaside resort town, possibly in the UK\",\n  \"landscape_features\": [\n    \"Rocky beach in foreground\",\n    \"Calm sea or bay\",\n    \"Hilly coastline with buildings\",\n    \"Long pier extending into the water\"\n  ],\n  \"architecture\": [\n    \"Rows of Victorian-style buildings along the coast\",\n    \"Large hotel or apartment building prominent on the hillside\",\n    \"Dense urban development on slopes\"\n  ],\n  \"weather\": {\n    \"sky\": \"Overcast with dark, dramatic clouds\",\n    \"lighting\": \"Dim, gloomy atmosphere\",\n    \"time_of_day\": \"Late afternoon or early evening\"\n  },\n  \"colors\": [\n    \"Gray and silver tones in the sky\",\n    \"Muted greens on the hills\",\n    \"Pale blues and grays in the water\",\n    \"White and pastel-colored buildings\"\n  ],\n  \"mood\": \"Moody, atmospheric, slightly melancholic\",\n  \"notable_elements\": [\n    \"The contrast between the dense urban development and the natural landscape\",\n    \"The long pier suggesting a tourist destination\",\n    \"The dramatic sky dominating the upper portion of the image\"\n  ]\n}"
+    }
+  ],
+  "analysis_type": "video_description"
+}
