@@ -1,0 +1,21 @@
+1. Code Structure: The code is now organized into clear, distinct classes with well-defined responsibilities.
+
+2. Error Handling: Introduced a custom `JSONSchemaError` for more specific error handling related to schema validation.
+
+3. DRY Principle: Removed duplicate code by creating a generic `parse_json` method in the `JSONParser` class.
+
+4. Type Hints: Improved and consistent use of type hints throughout the code for better clarity and IDE support.
+
+5. Method Refactoring: Extracted common logic into separate methods (e.g., `_parse_result` in `JSONFormatter`) to improve readability and maintainability.
+
+6. Consistency: Standardized the way JSON parsing and validation are handled across different functions.
+
+7. Modularity: The new structure allows for easier extension and modification of individual components.
+
+8. Naming Conventions: Improved naming for better clarity and consistency (e.g., `parse_json` instead of `parse_json_input`).
+
+9. Comments: Added a docstring for the custom exception class to explain its purpose.
+
+10. Flexibility: The refactored code is more flexible and can easily accommodate new schemas or parsing methods in the future.
+
+These changes make the code more robust, easier to read, and more maintainable while preserving the original functionality.

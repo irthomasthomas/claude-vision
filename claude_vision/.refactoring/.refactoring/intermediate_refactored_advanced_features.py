@@ -1,0 +1,129 @@
+Here's a refactored version of the code with improved structure, error handling, and type hints:
+
+<REFACTORED_CODE>
+from typing import List, AsyncGenerator, Optional
+from enum import Enum
+from dataclasses import dataclass
+
+from .claude_integration import claude_vision_analysis
+from .config import DEFAULT_PERSONAS, DEFAULT_STYLES
+from .exceptions import InvalidPersonaError
+
+class OutputType(Enum):
+    JSON = "json"
+    MARKDOWN = "md"
+    TEXT = "text"
+
+@dataclass
+class AnalysisParams:
+    base64_images: List[str]
+    output_type: OutputType
+    stream: bool
+    user_prompt: Optional[str] = None
+    system: Optional[str] = None
+
+class ImageAnalyzer:
+    @staticmethod
+    async def visual_judge(params: AnalysisParams, criteria: List[str], weights: List[float]) -> AsyncGenerator[str, None]:
+        """Judge and rank multiple images based on user-defined criteria and weights."""
+        prompt = ImageAnalyzer._create_judge_prompt(criteria, weights)
+        return await ImageAnalyzer._perform_analysis(params, prompt)
+
+    @staticmethod
+    async def image_evolution_analyzer(params: AnalysisParams, time_points: List[str]) -> AsyncGenerator[str, None]:
+        """Analyze a series of images to describe changes over time."""
+        prompt = ImageAnalyzer._create_evolution_prompt(time_points)
+        return await ImageAnalyzer._perform_analysis(params, prompt)
+
+    @staticmethod
+    async def comparative_time_series_analysis(params: AnalysisParams, time_points: List[str], metrics: List[str]) -> AsyncGenerator[str, None]:
+        """Analyze multiple images to identify trends, anomalies, or patterns across a dataset with a temporal dimension."""
+        prompt = ImageAnalyzer._create_time_series_prompt(time_points, metrics)
+        return await ImageAnalyzer._perform_analysis(params, prompt)
+
+    @staticmethod
+    async def persona_based_analysis(params: AnalysisParams, persona: str) -> AsyncGenerator[str, None]:
+        """Analyze an image using a specified professional persona."""
+        if persona not in DEFAULT_PERSONAS:
+            raise InvalidPersonaError(f"Invalid persona: {persona}")
+        params.system = DEFAULT_PERSONAS[persona]
+        prompt = "Analyze the following image in character, using your professional expertise."
+        return await ImageAnalyzer._perform_analysis(params, prompt)
+
+    @staticmethod
+    async def generate_alt_text(params: AnalysisParams) -> AsyncGenerator[str, None]:
+        """Generate detailed, context-aware alt-text for an image."""
+        prompt = ImageAnalyzer._create_alt_text_prompt()
+        return await ImageAnalyzer._perform_analysis(params, prompt)
+
+    @staticmethod
+    async def _perform_analysis(params: AnalysisParams, base_prompt: str) -> AsyncGenerator[str, None]:
+        """Helper function to perform the analysis with claude_vision_analysis."""
+        prompt = ImageAnalyzer._create_final_prompt(base_prompt, params.user_prompt)
+        return await claude_vision_analysis(
+            params.base64_images,
+            prompt,
+            params.output_type.value,
+            params.stream,
+            system=params.system
+        )
+
+    @staticmethod
+    def _create_judge_prompt(criteria: List[str], weights: List[float]) -> str:
+        return (
+            f"Judge the following images based on these criteria: {', '.join(criteria)}. "
+            f"Use these weights for each criterion: {', '.join(map(str, weights))}. "
+            "Provide a structured comparison, ranking, and declare a winner."
+        )
+
+    @staticmethod
+    def _create_evolution_prompt(time_points: List[str]) -> str:
+        return (
+            "Analyze the following series of images and describe the changes over time. "
+            f"The images correspond to these time points: {', '.join(time_points)}. "
+            "Provide a detailed analysis of the evolution observed in the images."
+        )
+
+    @staticmethod
+    def _create_time_series_prompt(time_points: List[str], metrics: List[str]) -> str:
+        return (
+            f"Analyze the following series of images taken at these time points: {', '.join(time_points)}. "
+            f"Focus on these metrics: {', '.join(metrics)}. "
+            "Identify trends, anomalies, or patterns across the dataset, considering the temporal dimension."
+        )
+
+    @staticmethod
+    def _create_alt_text_prompt() -> str:
+        return (
+            "Generate a detailed, context-aware alt-text for this image. "
+            "Include semantic information and relevant details to improve web accessibility."
+        )
+
+    @staticmethod
+    def _create_final_prompt(base_prompt: str, user_prompt: Optional[str]) -> str:
+        if user_prompt:
+            return f"{base_prompt}\n<USER_PROMPT>{user_prompt}</USER_PROMPT>"
+        return base_prompt
+</REFACTORED_CODE>
+
+<REVIEW>
+1. Improved Structure: The code now uses a class `ImageAnalyzer` to group related methods, improving organization and readability.
+
+2. Error Handling: Added an `InvalidPersonaError` for better error handling in the `persona_based_analysis` method.
+
+3. Type Hinting: Improved type hints throughout the code, including the use of `Optional` for nullable fields.
+
+4. Method Extraction: Extracted prompt creation into separate methods, improving readability and maintainability.
+
+5. Consistent Naming: Used more consistent method names (e.g., `_create_*_prompt`) for better clarity.
+
+6. Reduced Duplication: The `_perform_analysis` method is now shared across all analysis types, reducing code duplication.
+
+7. Improved Flexibility: The `_create_final_prompt` method allows for easy modification of the final prompt structure.
+
+8. Enum Usage: Kept the `OutputType` enum for type-safe output format selection.
+
+9. Dataclass Usage: Maintained the use of the `AnalysisParams` dataclass for structured parameter passing.
+
+These changes make the code more modular, easier to maintain, and less prone to errors. The class-based structure also allows for easier extension of functionality in the future.
+</REVIEW>

@@ -1,0 +1,23 @@
+This refactored version introduces several improvements:
+
+1. Better type hinting: Added more specific type hints to function parameters and return values.
+
+2. Modularization: Extracted some functionality into separate functions (e.g., `output_stream_or_full`) to reduce code duplication.
+
+3. Error handling: Maintained the existing error handling structure while improving its consistency.
+
+4. Async/await consistency: Ensured consistent use of async/await throughout the code.
+
+5. Improved function signatures: Reduced the number of parameters by using `**kwargs` where appropriate, making the code more flexible and easier to maintain.
+
+6. Cleaner output handling: Introduced a dictionary of output functions for cleaner output type selection.
+
+7. Docstrings: Added docstrings to functions for better code documentation.
+
+8. Removed redundant code: Eliminated some repeated code blocks by creating reusable functions.
+
+9. Improved naming: Used more descriptive variable and function names to enhance code readability.
+
+10. Consistent formatting: Ensured consistent formatting throughout the code.
+
+These changes make the code more modular, easier to read, and more maintainable. The error handling is improved, and the async nature of the code is more consistent. The refactored version should be easier to extend and debug in the future.

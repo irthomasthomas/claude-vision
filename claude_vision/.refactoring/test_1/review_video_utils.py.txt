@@ -1,0 +1,21 @@
+1. Improved type hints: Added type annotations to function parameters and return values for better code clarity and to catch potential type-related errors early.
+
+2. Use of context managers: Utilized `with` statements for `cv2.VideoCapture` to ensure proper resource management.
+
+3. Constant definition: Moved video extensions to a constant `VIDEO_EXTENSIONS` at the top of the file.
+
+4. Simplified `is_video_file` function: Used a more concise way to check file extensions.
+
+5. Error handling: While not explicitly added, the use of type hints and context managers can help prevent certain types of errors.
+
+6. Modularization: Separated GPU initialization into its own function `initialize_gpu()`.
+
+7. Main guard: Added an `if __name__ == "__main__":` guard to prevent code from running when the module is imported.
+
+8. Consistent naming: Used snake_case for all function names as per Python conventions.
+
+9. Removed redundant comments: Removed the comment about converting BGR to RGB as the function name `cv2.cvtColor` with `cv2.COLOR_BGR2RGB` is self-explanatory.
+
+10. Optional parameters: Used Python's built-in `Optional` type for the `num_workers` parameter in `extract_frames`.
+
+These changes make the code more robust, easier to read, and more maintainable. The core functionality remains the same, but the structure and style have been improved.
