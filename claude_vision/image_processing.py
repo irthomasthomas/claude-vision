@@ -66,14 +66,15 @@ async def process_image_source(source: Union[str, Image.Image, io.BytesIO, np.nd
         return convert_image_to_base64(image)
     except Exception as e:
         logger.error(f"Error processing image source: {str(e)}")
-        raise
-
-async def process_multiple_images(image_sources: List[Union[str, Image.Image, io.BytesIO]]) -> List[str]:
-    MAX_IMAGES = 20
+        raise InvalidRequestError(f"Failed to process image: {str(e)}")    
     
+    
+async def process_multiple_images(image_sources: List[Union[str, Image.Image, io.BytesIO]], process_as_group: bool = False) -> List[str]:
+    MAX_IMAGES = 20
+
     if len(image_sources) > MAX_IMAGES:
         raise InvalidRequestError(f"Too many images. Maximum allowed is {MAX_IMAGES}, but {len(image_sources)} were provided.")
-    
+
     async with httpx.AsyncClient() as client:
         tasks = [process_image_source(source, client) for source in image_sources[:MAX_IMAGES]]
         return await asyncio.gather(*tasks)
