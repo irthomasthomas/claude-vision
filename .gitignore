@@ -6,3 +6,4 @@ claude_vision.egg-info
 claude_vision_cli.egg-info
 .refactoring
 claude_vision/.refactoring
+claude_vision/.refactoring/.refactoring
