@@ -1,0 +1,15 @@
+The refactored code introduces several improvements:
+
+1. A base `ClaudeVisionError` class: This replaces the `AnthropicError` class and serves as the parent for all custom exceptions. It provides a consistent structure for all errors.
+
+2. `ErrorCode` enum: This new enum class defines error codes for each type of error, improving error categorization and making it easier to handle errors programmatically.
+
+3. Consistent error structure: Each error class now inherits from `ClaudeVisionError` and sets its specific error code. This provides a uniform way to create and handle errors.
+
+4. Renamed `PermissionError` to `PermissionDeniedError`: This avoids naming conflicts with Python's built-in `PermissionError`.
+
+5. Improved type hinting: The `message` parameter in each exception class is explicitly typed as `str`.
+
+6. Consistent docstrings: Each exception class maintains its descriptive docstring.
+
+These changes make the error handling more robust, consistent, and easier to use throughout the Claude Vision package. It also allows for future expansion of error types and codes if needed.
