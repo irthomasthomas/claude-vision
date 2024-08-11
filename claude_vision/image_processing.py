@@ -1,3 +1,4 @@
+# image_processing.py - auto_refactory branch
 
 import io
 import base64
@@ -8,6 +9,8 @@ from typing import List, Union
 from .config import MAX_IMAGE_SIZE, SUPPORTED_FORMATS
 from .utils import logger
 from .exceptions import InvalidRequestError
+import numpy as np
+import cv2
 
 async def fetch_image_from_url(url: str, client: httpx.AsyncClient) -> Image.Image:
     try:
@@ -39,7 +42,7 @@ def open_image(image_path: str) -> Image.Image:
         logger.error(f"Error opening image {image_path}: {str(e)}")
         raise InvalidRequestError(f"Failed to open image: {image_path}")
 
-async def process_image_source(source: Union[str, Image.Image, io.BytesIO], client: httpx.AsyncClient) -> str:
+async def process_image_source(source: Union[str, Image.Image, io.BytesIO, np.ndarray], client: httpx.AsyncClient) -> str:
     try:
         if isinstance(source, str):
             if source.startswith(('http://', 'https://')):
@@ -50,6 +53,8 @@ async def process_image_source(source: Union[str, Image.Image, io.BytesIO], clie
             image = source
         elif isinstance(source, io.BytesIO):
             image = Image.open(source)
+        elif isinstance(source, np.ndarray):
+            image = Image.fromarray(cv2.cvtColor(source, cv2.COLOR_BGR2RGB))
         else:
             raise InvalidRequestError(f"Unsupported image source type: {type(source)}")
         
@@ -63,14 +68,15 @@ async def process_image_source(source: Union[str, Image.Image, io.BytesIO], clie
         return convert_image_to_base64(image)
     except Exception as e:
         logger.error(f"Error processing image source: {str(e)}")
-        raise
-
-async def process_multiple_images(image_sources: List[Union[str, Image.Image, io.BytesIO]]) -> List[str]:
-    MAX_IMAGES = 20
+        raise InvalidRequestError(f"Failed to process image: {str(e)}")    
     
+    
+async def process_multiple_images(image_sources: List[Union[str, Image.Image, io.BytesIO]], process_as_group: bool = False) -> List[str]:
+    MAX_IMAGES = 20
+
     if len(image_sources) > MAX_IMAGES:
         raise InvalidRequestError(f"Too many images. Maximum allowed is {MAX_IMAGES}, but {len(image_sources)} were provided.")
-    
+
     async with httpx.AsyncClient() as client:
         tasks = [process_image_source(source, client) for source in image_sources[:MAX_IMAGES]]
         return await asyncio.gather(*tasks)

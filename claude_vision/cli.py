@@ -1,11 +1,15 @@
+import io
+import sys
 from typing import AsyncGenerator
 import click
 import json
 import asyncio
 from .claude_integration import claude_vision_analysis
-from .json_utils import parse_json_input, format_json_output
+from .json_utils import parse_json_input, format_json_output, parse_video_json_input, format_video_json_output
 from .image_processing import process_multiple_images
 from .advanced_features import visual_judge, image_evolution_analyzer, comparative_time_series_analysis
+from .video_processing import analyze_video
+from .video_utils import is_video_file
 
 @click.group()
 def cli():
@@ -17,8 +21,20 @@ def cli():
 @click.option('--json-input', type=click.File('r'), help="JSON input for chained operations")
 @click.option('--output', type=click.Choice(['json', 'md', 'markdown', 'text']), default='text', help="Output format")
 @click.option('--stream', is_flag=True, help="Stream the response in real-time")
-def analyze(input_file, persona, json_input, output, stream):
-    asyncio.run(claude_vision_async(input_file, persona, json_input, output, stream))
+@click.option('--video', is_flag=True, help="Treat input as a video file")
+@click.option('--frame-interval', type=int, default=30, help="Interval between frames to analyze in video")
+@click.option('--num-workers', type=int, default=None, help="Number of worker processes for video analysis")
+@click.option('--prompt', help="Custom prompt for analysis")
+@click.option('--system', help="Custom system prompt for Claude")
+@click.option('--prefill', help="Prefill Claude's response")
+@click.option('--max-tokens', type=int, default=1000, help="Maximum number of tokens in the response")
+@click.option('--group', is_flag=True, help="Process frames or images as a group")
+def analyze(input_file, persona, json_input, output, stream, video, frame_interval, num_workers, prompt, system, prefill, max_tokens, group):
+    if not input_file and not sys.stdin.isatty():
+        input_data = sys.stdin.buffer.read()
+        input_file = io.BytesIO(input_data)
+    asyncio.run(claude_vision_async(input_file, persona, json_input, output, stream, video, frame_interval, num_workers, prompt, system, prefill, max_tokens, group))
+    
 
 @cli.command()
 @click.argument('image_paths', nargs=-1, type=click.Path(exists=True), required=True)
@@ -70,48 +86,69 @@ def time_series(image_paths, time_points, metrics, output):
     asyncio.run(time_series_async(image_paths, time_points_list, metrics_list, output))
 
 
-async def claude_vision_async(input_file, persona, json_input, output, stream):
+async def claude_vision_async(input_file, persona, json_input, output, stream, video, frame_interval, num_workers, prompt, system, prefill, max_tokens, group):
     try:
         if json_input:
-            data = parse_json_input(json_input)
+            data = parse_video_json_input(json_input) if video else parse_json_input(json_input)
             input_file = data['file_path']
             persona = data.get('persona', persona)
             analysis_type = data['analysis_type']
+            frame_interval = data.get('frame_interval', frame_interval)
         elif not input_file:
-            raise click.UsageError("Please provide an input file or JSON input.")
+            raise click.UsageError("Please provide an input file, pipe input, or JSON input.")
 
-        base64_images = await process_multiple_images([input_file])
-        prompt = generate_prompt(persona)
-        
-        result = await claude_vision_analysis(base64_images, prompt, output, stream)
-
-        if output == 'json':
-            if stream:
-                async for chunk in result:
-                    click.echo(chunk, nl=False)
-                click.echo()
+        if video or (isinstance(input_file, str) and is_video_file(input_file)):
+            metadata, frame_results = await analyze_video(input_file, frame_interval, persona, output, stream, num_workers, prompt=prompt, system=system, process_as_group=group)
+            
+            if output == 'json':
+                formatted_result = format_video_json_output(metadata, frame_results, "video_description")
+                click.echo(json.dumps(formatted_result, indent=2, ensure_ascii=False))
             else:
-                click.echo(json.dumps(format_json_output(result, "description"), indent=2))
-        elif output in ['md', 'markdown']:
-            if stream:
-                async for chunk in result:
-                    click.echo(chunk, nl=False)
-                click.echo()
-            else:
-                click.echo(result)
+                for result in frame_results:
+                    click.echo(f"Frame {result['frame_number']} ({result['timestamp']:.2f}s): {result['result']}")
         else:
-            if stream:
-                async for chunk in result:
-                    click.echo(chunk, nl=False)
-                click.echo()
+            if isinstance(input_file, io.BytesIO):
+                image = Image.open(input_file)
+                base64_images = [convert_image_to_base64(image)]
             else:
-                click.echo(result)
+                base64_images = await process_multiple_images([input_file], process_as_group=group)
+            if not prompt:
+                prompt = generate_prompt(persona)
+
+            result = await claude_vision_analysis(
+                base64_images, prompt, output, stream, 
+                system_prompt=system, 
+                max_tokens=max_tokens, 
+                prefill=prefill
+            )
+            if output == 'json':
+                if stream:
+                    async for chunk in result:
+                        click.echo(chunk, nl=False)
+                    click.echo()
+                else:
+                    formatted_result = format_json_output(result, "description")
+                    click.echo(json.dumps(formatted_result, indent=2, ensure_ascii=False))
+            elif output in ['md', 'markdown']:
+                if stream:
+                    async for chunk in result:
+                        click.echo(chunk, nl=False)
+                    click.echo()
+                else:
+                    click.echo(result)
+            else:
+                if stream:
+                    async for chunk in result:
+                        click.echo(chunk, nl=False)
+                    click.echo()
+                else:
+                    click.echo(result)
 
     except ValueError as e:
         click.echo(f"Error: {str(e)}", err=True)
     except Exception as e:
         click.echo(f"An unexpected error occurred: {str(e)}", err=True)
-        
+                        
 
 async def judge_async(image_paths, criteria, weights, output):
     try:
@@ -142,6 +179,7 @@ async def judge_async(image_paths, criteria, weights, output):
                 click.echo(result)
     except Exception as e:
         click.echo(f"An error occurred during judging: {str(e)}", err=True)
+     
         
 async def evolution_async(image_paths, time_points, output):
     try:
@@ -157,6 +195,7 @@ async def evolution_async(image_paths, time_points, output):
     except Exception as e:
         click.echo(f"An error occurred during evolution analysis: {str(e)}", err=True)
 
+
 async def time_series_async(image_paths, time_points, metrics, output):
     try:
         base64_images = await process_multiple_images(image_paths)
@@ -171,11 +210,13 @@ async def time_series_async(image_paths, time_points, metrics, output):
     except Exception as e:
         click.echo(f"An error occurred during time series analysis: {str(e)}", err=True)
 
+
 def generate_prompt(persona=None):
     base_prompt = "Analyze this image and provide a detailed description."
     if persona:
         return f"As a {persona}, {base_prompt}"
     return base_prompt
+
 
 if __name__ == '__main__':
     cli()
