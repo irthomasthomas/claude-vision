@@ -102,6 +102,8 @@ async def claude_vision_async(input_files, persona, json_input, output, stream, 
     except Exception as e:
         click.echo(f"An unexpected error occurred: {str(e)}", err=True)
 
+# ... (rest of the code remains unchanged)
+
 def generate_prompt(persona=None, multi_angle=False, multi_object=False, num_images=1):
     if num_images == 1:
         base_prompt = "Analyze this image and provide a detailed description."
@@ -117,5 +119,7 @@ def generate_prompt(persona=None, multi_angle=False, multi_object=False, num_ima
         return f"As a {persona}, {base_prompt}"
     return base_prompt
 
-# ... (rest of the file content)
+# ... (rest of the code remains unchanged)
 
+if __name__ == '__main__':
+    cli()
